@@ -1,0 +1,30 @@
+# RBAC entitlements — map roles to allowed tool scopes.
+# Scope matching: exact OR prefix wildcard ("ops:*" grants "ops:attendance").
+# `general` scope = the general-purpose agent tools (plan/notes/status).
+roles:
+  employee:
+    scopes:
+      - "ops:attendance"
+      - "ops:reports"
+      - "ops:project"
+  operator:
+    scopes:
+      - "ops:*"
+      - "general"          # general agent tools
+      - "audit:read"
+  manager:
+    scopes:
+      - "ops:*"            # all ops scopes (incl. access/deploy)
+      - "general"          # general agent tools
+      - "audit:read"
+  auditor:
+    scopes:
+      - "audit:read"
+      - "ops:reports"
+
+# Demo tokens -> roles (replace with real OIDC/SAML SSO in production).
+# NEVER ship real credentials; these are changed in production via SSO.
+demo_tokens:
+  employee-demo-token: "employee"
+  operator-demo-token: "operator"
+  manager-demo-token: "manager"

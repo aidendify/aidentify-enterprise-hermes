@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enterprise-Hermes · Admin</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --fg:#e6e9ef;
+          --muted:#8a93a6; --accent:#4f8cff; --ok:#2ecc71; --warn:#f1c40f;
+          --bad:#e74c3c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:16px 22px;
+           border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:17px; margin:0; }
+  .pill { font-size:11px; padding:3px 9px; border-radius:999px;
+          background:#223; color:var(--accent); border:1px solid var(--line); }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%;
+         background:var(--muted); margin-right:6px; }
+  .dot.ok { background:var(--ok); }
+  main { max-width:1080px; margin:24px auto; padding:0 18px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+          gap:14px; margin-bottom:22px; }
+  .card, section { background:var(--panel); border:1px solid var(--line);
+                   border-radius:10px; padding:16px; }
+  .card h3, section h2 { margin:0 0 8px; font-size:14px; color:var(--muted);
+                         text-transform:uppercase; letter-spacing:.04em; }
+  .card .num { font-size:26px; font-weight:700; }
+  section { margin-bottom:18px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line);
+           vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  code { background:#0b0d12; padding:2px 5px; border-radius:4px; font-size:12px; }
+  .tag { font-size:10px; padding:2px 7px; border-radius:4px; }
+  .tag.high { background:#3a1312; color:var(--bad); }
+  .tag.medium { background:#3a2f0f; color:var(--warn); }
+  .tag.low { background:#12341f; color:var(--ok); }
+  pre { max-height:320px; overflow:auto; background:#0b0d12; padding:10px;
+        border-radius:6px; font-size:12px; }
+  button { background:var(--accent); color:#fff; border:0; padding:6px 12px;
+           border-radius:6px; cursor:pointer; font-size:12.5px; }
+  button.ghost { background:transparent; border:1px solid var(--line); color:var(--fg); }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Enterprise-Hermes <span class="pill">admin control plane</span></h1>
+  <span id="status" class="pill">…</span>
+</header>
+<main>
+  <div class="grid">
+    <div class="card"><h3>Orgs</h3><div class="num" id="c-orgs">–</div></div>
+    <div class="card"><h3>Enabled</h3><div class="num" id="c-enabled">–</div></div>
+    <div class="card"><h3>Agent runs</h3><div class="num" id="c-runs">–</div></div>
+    <div class="card"><h3>Pending approvals</h3><div class="num" id="c-pending">–</div></div>
+  </div>
+
+  <section>
+    <h2>Org instances</h2>
+    <table id="orgs"><thead><tr><th>Org</th><th>Name</th><th>Enabled</th><th>Tools</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Pending human-approval gates</h2>
+    <table id="gates"><thead><tr><th>Req</th><th>Action</th><th>Actor</th><th>Approve</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Orchestration runs</h2>
+    <table id="runs"><thead><tr><th>Job</th><th>Org</th><th>Status</th><th>Task</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Audit trail</h2>
+    <pre id="audit"></pre>
+  </section>
+</main>
+<script src="/web/app.js"></script>
+</body>
+</html>

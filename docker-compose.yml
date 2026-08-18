@@ -1,0 +1,23 @@
+# Enterprise-Hermes appliance — one-command Docker stack
+#   ./enthermes up   → builds + starts, then GET /health
+# Public API + admin control plane exposed on ${PORT:-8080}
+services:
+  core:
+    build: .
+    container_name: enterprise-hermes
+    env_file: .env
+    environment:
+      EHERMES_WORKSPACE: /app/_data/workspace
+    volumes:
+      - ./_data:/app/_data
+    ports:
+      - "${PORT:-8080}:8080"
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health',timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

@@ -1,0 +1,18 @@
+Enterprise-Hermes is a governed, self-hosted enterprise deployment and hardening
+of the Hermes Agent framework by Nous Research.
+
+This product incorporates software from:
+
+  Hermes Agent
+  Copyright (c) 2025 Nous Research
+  https://github.com/NousResearch/hermes-agent
+  Licensed under the MIT License (see LICENSE.txt).
+
+Pursuant to the terms of the MIT License, this notice and the accompanying
+license text are retained in copies and substantial portions of the software.
+Enterprise-Hermes adds a governance layer (SSO/RBAC, immutable audit,
+human-approval gates, zero-data-egress defaults), a multi-org control plane,
+and a deployable appliance wrapper around the MIT-licensed Hermes agent core.
+
+That governance layer ("core/", "agent/", "orchestration/", "admin/", "web/")
+is original work of AIdentify and is distributed under the same MIT License.

@@ -1,0 +1,31 @@
+# Tool registry — name, risk (low|medium|high), required scope.
+# high = must pass the human-approval gate before execution.
+tools:
+  attendance.check_in:
+    scope: "ops:attendance"
+    risk: medium
+  attendance.check_out:
+    scope: "ops:attendance"
+    risk: medium
+  reports.daily_digest:
+    scope: "ops:reports"
+    risk: low
+  access.list_recent:
+    scope: "ops:access"
+    risk: medium
+  project.create_task:
+    scope: "ops:project"
+    risk: low
+  code.run_tests:
+    scope: "ops:deploy"
+    risk: high
+  # general-purpose enterprise tools
+  general.plan:
+    scope: "general"
+    risk: low
+  notes.save:
+    scope: "general"
+    risk: medium
+  general.status:
+    scope: "general"
+    risk: low

@@ -1,0 +1,35 @@
+# Enterprise-Hermes — one-command appliance
+#   ./enthermes up      boot the stack (docker compose)
+#   ./enthermes status  show running services / ports
+#   ./enthermes test    run governance unit tests
+#   ./enthermes down    stop the stack
+
+set -e
+cd "$(dirname "$0")"
+CMD="${1:-status}"
+
+case "$CMD" in
+  up)
+    docker compose up -d --build
+    echo "→ waiting for health…"
+    sleep 3
+    curl -sf http://localhost:8080/health || echo "health not ready yet (retry ./enthermes status)"
+    ;;
+  status)
+    docker compose ps
+    echo "--- health ---"
+    curl -sf http://localhost:8080/health 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "unreachable"
+    ;;
+  down)
+    docker compose down
+    ;;
+  test)
+    uv venv -q 2>/dev/null || true
+    uv pip install -q -r requirements.txt 2>/dev/null || true
+    uv run python3 -m pytest tests/ -q
+    ;;
+  *)
+    echo "usage: ./enthermes {up|status|down|test}"
+    exit 1
+    ;;
+esac
