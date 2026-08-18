@@ -1,6 +1,6 @@
 # Enterprise-Hermes appliance — one-command Docker stack
 #   ./enthermes up   → builds + starts, then GET /health
-# Public API + admin control plane exposed on ${PORT:-8080}
+# Public API + admin control plane exposed on ${PORT:-8081}
 services:
   core:
     build: .
@@ -11,7 +11,7 @@ services:
     volumes:
       - ./_data:/app/_data
     ports:
-      - "${PORT:-8080}:8080"
+      - "${PORT:-8081}:8080"
     command: uvicorn api.main:app --host 0.0.0.0 --port 8080
     restart: unless-stopped
     healthcheck:
