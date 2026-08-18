@@ -76,7 +76,17 @@ Open `http://localhost:8080/admin` — live org status, pending approvals, orche
 (control mapping + evidence templates — conduct your own audit).
 
 ## Deployment
-See `runbook/ADMIN_RUNBOOK.md` (deploy, configure SSO, operate) and
+```bash
+git clone https://github.com/aidendify/aidentify-enterprise-hermes
+cd aidentify-enterprise-hermes && cp .env.example .env && ./enthermes up
+```
+See `runbook/ADMIN_RUNBOOK.md` (deploy, configure SSO, operate, add orgs) and
 `security/hardening-checklist.md`.
+
+### Live reference deployment (Hostinger VPS)
+`http://200.234.33.118:8081` — governance validated live (health ✓, RBAC 403 ✓,
+high-risk gate 409 ✓, immutable audit ✓, admin console ✓). Egress-safe default
+(no LLM key shipped to the public container); supply `LLM_API_KEY` in the host
+`.env` to enable general agents.
 
 *Governed, not guessed. Run autonomous agents inside your firewall.*

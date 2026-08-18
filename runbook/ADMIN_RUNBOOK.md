@@ -1,67 +1,81 @@
-# Enterprise Agent Ops — Admin Runbook
+# Enterprise-Hermes — Admin Runbook
 
-Deploy, configure, operate, and troubleshoot the self-hosted platform.
+Deploy, configure SSO, operate, and maintain a governed Enterprise-Hermes
+appliance. This is the operator guide for the *governance + control plane*;
+the Hermes engine internals are the upstream project's domain.
 
-## 1. Prerequisites
-- A Linux host (or VM/Docker host) inside your network, with `docker` + `docker compose`,
-  or Python 3.10+ with `pip`.
-- An **in-network** OpenAI-compatible model endpoint (`LLM_BASE_URL`) — e.g. vLLM, Ollama,
-  or a private gateway. The core logic works without one for demos/tests.
+## 1. Deploy
 
-## 2. Deploy (containers)
+### One-command (Docker host with docker + compose)
 ```bash
-cp .env.example .env           # edit values
-# required: LLM_BASE_URL, AUDIT_HMAC_KEY (strong random)
-docker compose up -d --build
-curl -s localhost:8080/health   # -> {"status":"ok",...}
+git clone https://github.com/aidendify/aidentify-enterprise-hermes
+cd aidentify-enterprise-hermes
+cp .env.example .env          # set LLM_* (in-network endpoint + key) for the agent engine
+./enthermes up                # build + boot on http://<host>:8081
+curl -s localhost:8081/health | python3 -m json.tool
 ```
 
-## 3. Deploy (bare metal / non-container)
+### Admin console
+Open `http://<host>:8081/admin` — org status, pending approvals, orchestration
+runs, and the immutable audit trail.
+
+### (Hostinger Docker manager)
+Deploy the repo via `POST /docker {project_name, content: <git url>}`, then run
+the project's `/start` (the runner creates a container first; start it after).
+The compose maps host `8081 → container 8080`.
+
+## 2. Test the delivered logic
 ```bash
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-python3 scripts/demo.py         # verify the governed core
-uvicorn api.main:app --host 0.0.0.0 --port 8080
+./enthermes test            # governance unit tests (audit / rbac / gates)
+bash scripts/e2e.sh         # gate-approval flow + general agent smoke (needs LLM_API_KEY)
 ```
 
-## 4. Configure
-- **SSO:** set `OIDC_ISSUER` / `SAML_IDP_METADATA_URL`; wire a verifier in
-  `core/auth.py`. Remove demo tokens.
-- **Roles:** edit `config/entitlements.yaml` (scopes per role).
-- **Tools:** edit `config/tools.yaml` (risk level high ⇒ approval gate).
-- **Egress:** keep `ALLOW_EGRESS=false`.
+## 3. Connect the real agent engine (LLM)
+The platform is egress-safe by default: with no `LLM_API_KEY` configured, all
+governance works and `/agents/run` returns HTTP 503. To enable general agents:
 
-## 5. Operate — common workflows
-- Run the demo: `python3 scripts/demo.py`
-- Test suite: `python3 scripts/validate_pack.py` or `pytest tests/`
-- Check health: `GET /health`
-- List pending approvals: `GET /gate/pending`
-- Approve a gate: `POST /gate/{id}/decide` `{"approver":"manager","approve":true,"reason":"..."}`
-- Read audit: `GET /audit`
-- Ship audit to SIEM: use the `GET /audit` reader in a cron pull.
+```bash
+# in .env on the host:
+LLM_BASE_URL=https://your-in-network-endpoint/v1   # keep in-network for zero egress
+LLM_MODEL=your-model
+LLM_API_KEY=...                                   # real key — never commit
+ALLOW_EGRESS=false                                # stays false = safe default
+```
+Then `./enthermes up`.
 
-## 6. Troubleshooting
-| Symptom | Cause/Fix |
-|---------|-----------|
-| `/health` 500 | audit chain check failed — restore from backup or re-init (see below) |
-| 401 on `/run` | token invalid — set a valid demo token or wire SSO |
-| 403 on `/run` | role lacks scope — grant scope in `entitlements.yaml` (least privilege!) |
-| 409 on `/run` | high-risk tool awaiting approval — approve via `/gate/.../decide` |
-| `code.run_tests` fails | compound scripts blocked by design; use a single safe command |
-| audit tamper alert | someone edited `_data/audit.log` — investigate before restore |
+## 4. Enterprise SSO (production)
+Replace the demo token authenticator in `core/auth.py` (`Authenticator`) with a
+real **OIDC** (PyJWT) or **SAML** (python3-saml) verifier wired to your IdP.
+The RBAC surface (`Principal.can(scope)`) is unchanged. Rotate/remove all
+`*-demo-token` values.
 
-## 7. Backup & recovery
-- Backup `_data/` (datastore + audit) and `.env` config; audit should be write-once
-  and archived. Restore datastore from backup; keep audit as a chain (replay from the
-  backup, not a re-write).
-- Rotate `AUDIT_HMAC_KEY` on a schedule; verify chain with `AuditLog.verify()`.
+## 5. Adding a tenant org
+```bash
+./scripts/provision_org.sh <client-slug> "Client Name"
+```
+Each org gets an isolated Hermes profile workspace + audit chain under `_data/<slug>/`.
 
-## 8. Security hygiene (see `security/hardening-checklist.md`)
-- Non-root runtime, reverse-proxy TLS, network isolation, no secrets in git,
-  red-team test RBAC denials.
+## 6. Multi-agent orchestration
+`POST /orchestrate/launch` starts a governed agent workstream; `POST
+/orchestrate/delegate` fans out subtasks; `GET /orchestrate/status` and
+`GET /orchestrate/runs` report progress. Every subtask routes through the same
+RBAC / gate / audit as interactive runs.
 
-## 9. Customising agents / tools
-1. Add a handler + `Tool` in `core/tools.py` (set risk).
-2. Declare scope in `config/entitlements.yaml`.
-3. (Optional) wrap a workflow in `agents/` like the existing five.
-4. Re-run `scripts/validate_pack.py` to confirm nothing broke.
+## 7. Key security notes
+- **Zero egress by default** — agents talk only to `LLM_BASE_URL`. Keep it
+  in-network; never set `ALLOW_EGRESS=true` unless you have an explicit,
+  audited reason.
+- **Immutable audit** — every tool call and approval is HMAC-chained. Back up
+  `_data/<org>/audit.log`; verify integrity with the `AuditLog.verify()` method.
+- **Human gates** — `risk: high` tools block until an authorized approver signs
+  off. Audit the reason.
+- **Least privilege** — grant scopes in `config/entitlements.yaml`; never give a
+  role more than it needs.
+
+## 8. Troubleshooting
+- `/health` not OK → check the container is started (`docker compose ps`);
+  confirm `/admin` renders (service is up).
+- `/agents/run` → 503 → `LLM_API_KEY` not set (see §3).
+- Tool returns `rbac/denied` → role lacks the scope in `entitlements.yaml`.
+- Tool returns `gate_required` (409) → approve via admin console (`/gate/pending`)
+  or `POST /gate/<req_id>/decide` then retry with `request_id`.
